@@ -16,6 +16,9 @@ jobs:
           echo "NAME=$(git log -1 --pretty=format:'%an')" >> $GITHUB_ENV
           echo "EMAIL=$(git log -1 --pretty=format:'%ae')" >> $GITHUB_ENV
 
+      - name: Print environment variables for debugging
+        run: env | sort
+
       - name: Build and Test Package
         uses: docker://debian:sid
         env:
