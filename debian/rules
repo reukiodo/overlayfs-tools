@@ -3,6 +3,8 @@
 # We disable the tests during the build because they require sudo/root
 # which isn't allowed in a standard Debian build environment.
 export DEB_BUILD_OPTIONS += nocheck
+# Relax GCC 15 strictness for the initial build attempt
+export DEB_CFLAGS_MAINT_APPEND = -Wno-error=implicit-function-declaration
 
 %:
 	dh $@
