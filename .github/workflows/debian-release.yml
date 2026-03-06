@@ -1,0 +1,55 @@
+name: Debian Package Build & Release
+on:
+  push:
+    tags:
+      - 'v*' # Triggers a Release when you push a tag like v1.0-1
+    branches:
+      - debian/sid
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build and Piuparts Test
+        uses: docker://debian:sid
+        with:
+          # We need privileged mode for piuparts to mount filesystems inside the container
+          args: |
+            sh -c "apt-get update && \
+            apt-get install -y build-essential debhelper devscripts lintian piuparts && \
+            mk-build-deps -ir -t 'apt-get -y' && \
+            dpkg-buildpackage -us -uc -b && \
+            echo '--- RUNNING LINTIAN ---' && \
+            lintian ../*.deb && \
+            echo '--- RUNNING PIUPARTS ---' && \
+            piuparts ../*.deb"
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: debian-packages
+          path: ./*.deb
+
+  release:
+    needs: build-and-test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: debian-packages
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ./*.deb
+          generate_release_notes: true
