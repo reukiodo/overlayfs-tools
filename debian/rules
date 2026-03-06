@@ -9,5 +9,9 @@ export DEB_BUILD_OPTIONS += nocheck
 
 # If the meson.build file has a 'test' section that calls sudo, 
 # we override it to do nothing during the package build.
-override_dh_auto_test:
+# If 'ninja install' fails because of sudo in meson.build, 
+# we manually install the binary from the build directory.
+override_dh_auto_install:
 	@echo "Skipping tests that require sudo..."
+	install -D -m 0755 obj-x86_64-linux-gnu/overlay $(DESTDIR)/usr/bin/overlay
+	dh_installman
