@@ -9,12 +9,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build and Check Package
+      - name: Build and Piuparts Test
         uses: docker://debian:sid
         with:
+          # We need privileged mode for piuparts to mount filesystems inside the container
           args: |
             sh -c "apt-get update && \
-            apt-get install -y build-essential debhelper devscripts lintian && \
+            apt-get install -y build-essential debhelper devscripts lintian piuparts && \
             mk-build-deps -ir -t 'apt-get -y' && \
             dpkg-buildpackage -us -uc -b && \
-            lintian ../*.deb"
+            echo '--- RUNNING LINTIAN ---' && \
+            lintian ../*.deb && \
+            echo '--- RUNNING PIUPARTS ---' && \
+            piuparts ../*.deb"
