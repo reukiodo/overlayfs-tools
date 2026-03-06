@@ -2,7 +2,7 @@ Source: overlayfs-tools
 Section: utils
 Priority: optional
 Maintainer: Your Name <your.email@example.com>
-Build-Depends: debhelper-compat (= 13)
+Build-Depends: debhelper-compat (= 13), libattr1-dev
 Standards-Version: 4.6.2
 Homepage: https://github.com
 
