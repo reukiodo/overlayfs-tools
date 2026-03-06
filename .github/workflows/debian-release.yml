@@ -45,13 +45,13 @@ jobs:
             lintian ../*.deb &&
             echo '--- RUNNING BASIC INSTALL TEST ---' &&
             dpkg -i ../*.deb &&
-            mv ../overlayfs-tools_* ./"
+            mv ../overlayfs-tools* ./"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: debian-packages
-          path: ./overlayfs-tools_*
+          path: ./overlayfs-tools*
 
   release:
     needs: build-and-test
@@ -68,5 +68,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            ./overlayfs-tools_*
+            ./overlayfs-tools*
           generate_release_notes: true
