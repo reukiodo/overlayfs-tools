@@ -1,9 +1,5 @@
 #!/usr/bin/make -f
 
-# Force debhelper to use the plain Makefile
+# Standard debhelper call - it will detect meson.build automatically
 %:
-	dh $@ --buildsystem=makefile
-
-# Ensure it installs the binary to /usr/bin/
-override_dh_auto_install:
-	install -D -m 0755 overlay $(DESTDIR)/usr/bin/overlay
+	dh $@
