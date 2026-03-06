@@ -1,0 +1,9 @@
+--- a/meson.build
++++ b/meson.build
+@@ -91,5 +91,4 @@
+-sudo = find_program('sudo')
+-test('run_tests',
+-     sudo,
+-     args : [python, test_script, 'builddir/overlay'],
+-     is_parallel : false)
++# sudo and tests removed for Debian build environment compatibility
