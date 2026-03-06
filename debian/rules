@@ -11,7 +11,7 @@ export DEB_BUILD_OPTIONS += nocheck
 # we override it to do nothing during the package build.
 # If 'ninja install' fails because of sudo in meson.build, 
 # we manually install the binary from the build directory.
+# If ninja install still fails due to other sudo calls, use this:
 override_dh_auto_install:
-	@echo "Skipping tests that require sudo..."
-	install -D -m 0755 obj-x86_64-linux-gnu/overlay $(DESTDIR)/usr/bin/overlay
+	dh_auto_install --destdir=debian/overlayfs-tools
 	dh_installman
