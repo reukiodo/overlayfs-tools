@@ -1,7 +1,7 @@
 Source: overlayfs-tools
 Section: utils
 Priority: optional
-Maintainer: Your Name <your.email@example.com>
+Maintainer: Miles Raymond <reukiodo@gmail.com>
 Build-Depends: debhelper-compat (= 13), 
                meson (>= 0.54), 
                ninja-build, 

@@ -29,9 +29,12 @@ jobs:
           args: |
             sh -c "apt-get update && \
             apt-get install -y build-essential debhelper devscripts lintian && \
+            # --- PULL IDENTITY FROM GIT ---
+            export DEBFULLNAME='$(git log -1 --pretty=format:'%an')' && \
+            export DEBEMAIL='$(git log -1 --pretty=format:'%ae')' && \
             # --- AUTO VERSIONING ---
             VERSION=${GITHUB_REF_NAME#v}
-            dch -v ${VERSION}-1 --distribution unstable --force-distribution 'Automated release from GitHub Tag' && \
+            dch -v ${VERSION} --distribution unstable --force-distribution 'Automated release from GitHub Tag' && \
             # --- NORMAL BUILD ---
             mk-build-deps -ir -t 'apt-get -y' && \
             dpkg-buildpackage -us -uc -b && \
