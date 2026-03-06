@@ -3,3 +3,9 @@ overlayfs-tools (1.0-1) unstable; urgency=medium
   * Initial release for Debian.
 
  -- Miles Raymond <reukiodo@gmail.com>  Thu, 05 Mar 2026 12:00:00 +0000
+
+overlayfs-tools (20260306-3) unstable; urgency=medium
+
+  * Initial release (Closes: #1129975)
+
+ -- Miles Raymond <reukiodo@gmail.com>  Fri, 06 Mar 2026 14:30:00 -0800
