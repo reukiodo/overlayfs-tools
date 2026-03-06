@@ -18,30 +18,31 @@ jobs:
           # We do this outside the docker container first or inside it.
           # Best to do it inside the build step:
 
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Extract Git Identity
+        id: ident
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          echo "NAME=$(git log -1 --pretty=format:'%an')" >> $GITHUB_ENV
+          echo "EMAIL=$(git log -1 --pretty=format:'%ae')" >> $GITHUB_ENV
 
       - name: Build and Test Package
         uses: docker://debian:sid
+        env:
+          DEBFULLNAME: ${{ env.NAME }}
+          DEBEMAIL: ${{ env.EMAIL }}
         with:
-          args: |
+          args: >
             sh -c "apt-get update && \
-            apt-get install -y build-essential debhelper devscripts lintian && \
-            git config --global --add safe.directory /github/workspace && \
-            NAME=\`git log -1 --pretty=format:'%an'\` && \
-            EMAIL=\`git log -1 --pretty=format:'%ae'\` && \
-            export DEBFULLNAME=\"\$NAME\" && \
-            export DEBEMAIL=\"\$EMAIL\" && \
+            apt-get install -y build-essential debhelper devscripts lintian &&
+            git config --global --add safe.directory /github/workspace &&
             VERSION=${GITHUB_REF_NAME#v}
-            dch -v ${VERSION} --distribution unstable --force-distribution 'Automated release from GitHub Tag' && \
-            mk-build-deps -ir -t 'apt-get -y' && \
-            dpkg-buildpackage -us -uc -b && \
-            echo '--- RUNNING LINTIAN ---' && \
-            lintian ../*.deb && \
-            echo '--- RUNNING BASIC INSTALL TEST ---' && \
-            dpkg -i ../*.deb && \
+            dch -v ${VERSION} --distribution unstable --force-distribution 'Automated release from GitHub Tag' &&
+            mk-build-deps -ir -t 'apt-get -y' &&
+            dpkg-buildpackage -us -uc -b &&
+            echo '--- RUNNING LINTIAN ---' &&
+            lintian ../*.deb &&
+            echo '--- RUNNING BASIC INSTALL TEST ---' &&
+            dpkg -i ../*.deb &&
             mv ../*.deb ./"
 
       - name: Upload Artifacts
