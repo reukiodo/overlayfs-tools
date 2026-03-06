@@ -1,6 +1,6 @@
 --- a/meson.build
 +++ b/meson.build
-@@ -91,5 +91,4 @@
+@@ -91,7 +91,4 @@
 -
 -test('run_tests', find_program('test_cases/run_tests.py'))
 -
