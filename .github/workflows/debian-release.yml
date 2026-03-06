@@ -40,18 +40,18 @@ jobs:
             git config --global --add safe.directory /github/workspace &&
             dch -v $VERSION --distribution unstable --force-distribution 'Automated release from GitHub Tag' &&
             mk-build-deps -ir -t 'apt-get -y' &&
-            dpkg-buildpackage -us -uc -b &&
+            dpkg-buildpackage -us -uc &&
             echo '--- RUNNING LINTIAN ---' &&
             lintian ../*.deb &&
             echo '--- RUNNING BASIC INSTALL TEST ---' &&
             dpkg -i ../*.deb &&
-            mv ../*.deb ./"
+            mv ../overlayfs-tools_* ./"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: debian-packages
-          path: ./*.deb
+          path: ./overlayfs-tools_*
 
   release:
     needs: build-and-test
@@ -68,5 +68,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            ./*.deb
+            ./overlayfs-tools_*
           generate_release_notes: true
