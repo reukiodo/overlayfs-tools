@@ -5,7 +5,8 @@ Maintainer: Your Name <your.email@example.com>
 Build-Depends: debhelper-compat (= 13), 
                meson (>= 0.54), 
                ninja-build, 
-               libattr1-dev
+               libattr1-dev,
+               pkg-config
 Standards-Version: 4.6.2
 Homepage: https://github.com
 
