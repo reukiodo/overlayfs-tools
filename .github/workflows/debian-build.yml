@@ -14,16 +14,14 @@ jobs:
         with:
           args: |
             sh -c "apt-get update && \
-            apt-get install -y build-essential debhelper devscripts lintian && \
-            # --- PULL IDENTITY FROM GIT ---
-            NAME=\$(git log -1 --pretty=format:'%an') && \
-            EMAIL=\$(git log -1 --pretty=format:'%ae') && \
+            apt-get install -y build-essential debhelper devscripts lintian git && \
+            git config --global --add safe.directory /github/workspace && \
+            NAME=\`git log -1 --pretty=format:'%an'\` && \
+            EMAIL=\`git log -1 --pretty=format:'%ae'\` && \
             export DEBFULLNAME=\"\$NAME\" && \
             export DEBEMAIL=\"\$EMAIL\" && \
-            # --- NORMAL BUILD ---
             mk-build-deps -ir -t 'apt-get -y' && \
             dpkg-buildpackage -us -uc -b && \
-            echo '--- RUNNING LINTIAN ---' && \
+            echo 'BUILD_COMPLETE' && \
             lintian ../*.deb && \
-            echo '--- RUNNING BASIC INSTALL TEST ---' && \
             dpkg -i ../*.deb"
