@@ -2,7 +2,10 @@ Source: overlayfs-tools
 Section: utils
 Priority: optional
 Maintainer: Your Name <your.email@example.com>
-Build-Depends: debhelper-compat (= 13), libattr1-dev
+Build-Depends: debhelper-compat (= 13), 
+               meson (>= 0.54), 
+               ninja-build, 
+               libattr1-dev
 Standards-Version: 4.6.2
 Homepage: https://github.com
 
@@ -10,6 +13,6 @@ Package: overlayfs-tools
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: tools to manage OverlayFS filesystems
- Provides a C implementation of utilities to maintain OverlayFS,
- including an offline merge tool necessary for syncing 
- writable RAM layers back to persistent storage.
+ Provides utilities to maintain OverlayFS, including an offline 
+ merge tool necessary for syncing writable RAM layers back 
+ to persistent storage.
