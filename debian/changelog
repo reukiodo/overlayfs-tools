@@ -1,0 +1,5 @@
+overlayfs-tools (1.0-1) unstable; urgency=medium
+
+  * Initial release for Debian.
+
+ -- Your Name <your.email@example.com>  Thu, 05 Mar 2026 12:00:00 +0000
