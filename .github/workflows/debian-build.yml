@@ -57,18 +57,18 @@ jobs:
           
           # Conditionally register foreign architecture configurations
           if [ -n "${{ matrix.cross_arch }}" ]; then
-              dpkg --add-architecture ${{ matrix.cross_arch }}
-              apt-get update
+            dpkg --add-architecture ${{ matrix.cross_arch }}
+            apt-get update
           fi
           
           # Conditionally install target cross-compilers or compiler helpers
           if [ -n "${{ matrix.toolchain }}" ]; then
-              apt-get install -y ${{ matrix.toolchain }}
+            apt-get install -y ${{ matrix.toolchain }}
           fi
 
           # Conditionally provision crossbuild-essentials explicitly to prevent apt from purging dummy dependency targets
           if [ -n "${{ matrix.cross_arch }}" ] && [ "${{ matrix.cross_arch }}" != "i386" ]; then
-              apt-get install -y crossbuild-essential-${{ matrix.cross_arch }}
+            apt-get install -y crossbuild-essential-${{ matrix.cross_arch }}
           fi
 
       - name: Resolve Architecture Dependencies and Build Package
@@ -78,9 +78,15 @@ jobs:
         run: |
           # 1. Resolve build-dependencies safely across cross-compilation layers
           if [ -n "${{ matrix.cross_arch }}" ]; then
+            # snowflake i386: Treat it as a native multiarch addition to prevent apt uninstall loop traps
+            if [ "${{ matrix.cross_arch }}" = "i386" ]; then
+              # Added -B to tell mk-build-deps to ONLY generate core binary tracking dependencies
+              mk-build-deps -y -ir -B -t "apt-get -y --no-install-recommends"
+            else
               mk-build-deps -ir -t "apt-get -y --no-install-recommends -o Debug::pkgProblemResolver=yes" --host-arch ${{ matrix.cross_arch }} --build-arch amd64
+            fi
           else
-              mk-build-deps -ir -t "apt-get -y --no-install-recommends"
+            mk-build-deps -ir -t "apt-get -y --no-install-recommends"
           fi
           
           # 2. Inject performance overrides (such as down-tuning i386 to i686 execution limits)
@@ -88,9 +94,9 @@ jobs:
           
           # 3. Compile the package for the given target matrix architecture
           if [ -n "${{ matrix.cross_arch }}" ]; then
-              dpkg-buildpackage -a ${{ matrix.cross_arch }} -us -uc -b
+            dpkg-buildpackage -a ${{ matrix.cross_arch }} -us -uc -b
           else
-              dpkg-buildpackage -us -uc -b
+            dpkg-buildpackage -us -uc -b
           fi
 
       - name: Run Downstream Lintian & Installation Sanity Pass
@@ -100,13 +106,13 @@ jobs:
           
           echo "=== Simulating Local Package Extraction Tests ==="
           if [ -z "${{ matrix.cross_arch }}" ]; then
-              # Filter wildcards using grep -v to safely bypass the -dbgsym package files
-              for pkg in $(ls ../*.deb | grep -v "dbgsym"); do
-                  dpkg -i "$pkg"
-              done
+            # Filter wildcards using grep -v to safely bypass the -dbgsym package files
+            for pkg in $(ls ../*.deb | grep -v "dbgsym"); do
+              dpkg -i "$pkg"
+            done
           else
-              echo "Skipping native installation pass execution for cross-compiled asset: ${{ matrix.arch }}"
-              for pkg in $(ls ../*_${{ matrix.arch }}.deb | grep -v "dbgsym"); do
-                  dpkg --info "$pkg"
-              done
+            echo "Skipping native installation pass execution for cross-compiled asset: ${{ matrix.arch }}"
+            for pkg in $(ls ../*_${{ matrix.arch }}.deb | grep -v "dbgsym"); do
+              dpkg --info "$pkg"
+            done
           fi
