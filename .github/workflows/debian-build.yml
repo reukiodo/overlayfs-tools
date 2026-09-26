@@ -78,7 +78,7 @@ jobs:
         run: |
           # 1. Resolve build-dependencies safely across cross-compilation layers
           if [ -n "${{ matrix.cross_arch }}" ]; then
-              mk-build-deps -ir -t "apt-get -y --no-install-recommends --o Debug::pkgProblemResolver=yes" --host-arch ${{ matrix.cross_arch }} --build-arch amd64
+              mk-build-deps -ir -t "apt-get -y --no-install-recommends -o Debug::pkgProblemResolver=yes" --host-arch ${{ matrix.cross_arch }} --build-arch amd64
           else
               mk-build-deps -ir -t "apt-get -y --no-install-recommends"
           fi
