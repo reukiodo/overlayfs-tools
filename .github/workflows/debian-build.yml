@@ -12,13 +12,25 @@ jobs:
             cross_arch: ""
             toolchain: ""
             flags: ""
+          - arch: armel
+            cross_arch: "armel"
+            toolchain: "gcc-arm-linux-gnueabi"
+            flags: ""
+          - arch: armhf
+            cross_arch: "armhf"
+            toolchain: "gcc-arm-linux-gnueabihf"
+            flags: ""
+          - arch: arm64
+            cross_arch: "arm64"
+            toolchain: "gcc-aarch64-linux-gnu"
+            flags: ""
           - arch: i386
             cross_arch: "i386"
             toolchain: "gcc-multilib"
             flags: "export DEB_CFLAGS_SET='-march=i686 -mtune=generic'"
-          - arch: arm64
-            cross_arch: "arm64"
-            toolchain: "gcc-aarch64-linux-gnu"
+          - arch: ppc64el
+            cross_arch: "ppc64el"
+            toolchain: "gcc-powerpc64le-linux-gnu"
             flags: ""
 
     container:
@@ -59,9 +71,9 @@ jobs:
           DEBFULLNAME: ${{ env.NAME }}
           DEBEMAIL: ${{ env.EMAIL }}
         run: |
-          # 1. Resolve build-dependencies for the specific target architecture
+          # 1. Resolve build-dependencies safely across cross-compilation layers
           if [ -n "${{ matrix.cross_arch }}" ]; then
-              mk-build-deps -ir -t "apt-get -y --no-install-recommends" -a ${{ matrix.cross_arch }}
+              mk-build-deps -ir -t "apt-get -y --no-install-recommends" --host-arch ${{ matrix.cross_arch }} --build-arch amd64
           else
               mk-build-deps -ir -t "apt-get -y --no-install-recommends"
           fi
