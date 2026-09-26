@@ -53,17 +53,22 @@ jobs:
 
       - name: Configure Foreign Architecture and Base Toolchains
         run: |
-          apt-get install -y debhelper devscripts lintian
+          apt-get install -y debhelper devscripts lintian equivs
           
-          # Conditionally register foreign architecture configurations if present in matrix
+          # Conditionally register foreign architecture configurations
           if [ -n "${{ matrix.cross_arch }}" ]; then
               dpkg --add-architecture ${{ matrix.cross_arch }}
               apt-get update
           fi
           
-          # Install target cross-compilers or compiler helpers if specified
+          # Conditionally install target cross-compilers or compiler helpers
           if [ -n "${{ matrix.toolchain }}" ]; then
               apt-get install -y ${{ matrix.toolchain }}
+          fi
+
+          # Conditionally provision crossbuild-essentials explicitly to prevent apt from purging dummy dependency targets
+          if [ -n "${{ matrix.cross_arch }}" ] && [ "${{ matrix.cross_arch }}" != "i386" ]; then
+              apt-get install -y crossbuild-essential-${{ matrix.cross_arch }}
           fi
 
       - name: Resolve Architecture Dependencies and Build Package
