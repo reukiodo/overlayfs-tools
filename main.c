@@ -29,6 +29,7 @@ bool verbose;
 bool brief;
 bool ignore;
 bool force;
+bool use_rsync;
 extern const char *program_name;
 
 #ifndef __GLIBC__
@@ -58,6 +59,7 @@ void print_help(const char *program) {
     puts("  -m, --mountdir=MOUNTDIR    the mountdir of OverlayFS (optional)");
     puts("  -L, --lowernew=LOWERNEW    the lowerdir of new OverlayFS (optional)");
     puts("  -U, --uppernew=UPPERNEW    the upperdir of new OverlayFS (optional)");
+    puts("  -r, --use-rsync            use rsync to sync files in merge command (optional)");
     puts("  -i  --ignore-mounted       don't prompt if OverlayFS is still mounted (optional)");
     puts("  -f  --force-execution      also execute (and clean) the generated script in case of merge or vacuum (optional)");
     puts("  -v, --verbose              with diff action only: when a directory only exists in one version, still list every file of the directory");
@@ -158,6 +160,7 @@ int main(int argc, char *argv[]) {
         { "mountdir",       required_argument, 0, 'm' },
         { "lowernew",       required_argument, 0, 'L' },
         { "uppernew",       required_argument, 0, 'U' },
+        { "use-rsync",      no_argument      , 0, 'r' },
         { "ignore-mounted", no_argument      , 0, 'i' },
         { "force-execution", no_argument      , 0, 'f' },
         { "help",           no_argument      , 0, 'h' },
@@ -171,7 +174,7 @@ int main(int argc, char *argv[]) {
     int long_index = 0;
     program_name = basename(argv[0]);
 
-    while ((opt = getopt_long_only(argc, argv, "l:u:m:L:U:ihvVb", long_options, &long_index)) != -1) {
+    while ((opt = getopt_long_only(argc, argv, "l:u:m:L:U:rihvVb", long_options, &long_index)) != -1) {
         switch (opt) {
             case 'l':
                 lower = realpath(optarg, NULL);
@@ -194,6 +197,9 @@ int main(int argc, char *argv[]) {
                 directory_create("New upperdir", optarg);
                 dir = realpath(optarg, NULL);
                 if (dir) { vars[UPPERNEW] = dir; }
+                break;
+            case 'r':
+                use_rsync = true;
                 break;
             case 'i':
                 ignore = true;

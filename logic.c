@@ -482,7 +482,11 @@ static int merge_f(const char *lower_path, const char* upper_path, const size_t 
     if (metacopy) {
         return command(script_stream, "cp --attributes-only --preserve=all %U %L", upper_path, lower_path) || command(script_stream, "rm %U", upper_path);
     }
-    return command(script_stream, "rm -rf %L", lower_path) || command(script_stream, "mv -T %U %L", upper_path, lower_path);
+    if (use_rsync) {
+        return command(script_stream, "rsync -a --remove-source-files %U %L", upper_path, lower_path);
+    } else {
+        return command(script_stream, "rm -rf %L", lower_path) || command(script_stream, "mv -T %U %L", upper_path, lower_path);
+    }
 }
 
 static int merge_sl(const char *lower_path, const char* upper_path, const size_t lower_root_len, const struct stat *lower_status, const struct stat *upper_status, FILE* script_stream, int *fts_instr) {

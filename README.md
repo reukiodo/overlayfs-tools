@@ -81,7 +81,7 @@ This project provides several tools:
 - **fsck.overlay** - is used to check and optionally repair underlying directories of overlay-filesystem.
 - **vacuum** - remove duplicated files in `upperdir` where `copy_up` is done but the file is not actually modified (see the sentence "the `copy_up` may turn out to be unnecessary" in the [Linux documentation](https://www.kernel.org/doc/Documentation/filesystems/overlayfs.txt)). This may reduce the size of `upperdir` without changing `lowerdir` or `overlay`.
 - **diff** - show the list of actually changed files (the difference between `overlay` and `lowerdir`). A file with its type changed (i.e. from symbolic link to regular file) will shown as deleted then added, rather than modified. Similarly, for a opaque directory in `upperdir`, the corresponding directory in `lowerdir` (if exists) will be shown as entirely deleted, and a new directory with the same name added. File permission/owner changes will be simply shown as modified.
-- **merge** - merge down the changes from `upperdir` to `lowerdir`. Unlike [aubrsync](http://aufs.sourceforge.net/aufs2/brsync/README.txt) for AuFS which bypasses the union filesystem mechanism, overlayfs-utils emulates the OverlayFS logic, which will be far more efficient. After this operation, `upperdir` will be empty and `lowerdir` will be the same as original `overlay`.
+- **merge** - merge down the changes from `upperdir` to `lowerdir`. Unlike [aubrsync](http://aufs.sourceforge.net/aufs2/brsync/README.txt) for AuFS which bypasses the union filesystem mechanism, overlayfs-utils emulates the OverlayFS logic, which will be far more efficient. After this operation, `upperdir` will be empty and `lowerdir` will be the same as original `overlay`. Optionally supports `-r, --rsync-path` to use rsync to merge files.
 - **deref** - copy changes from `upperdir` to `uppernew` while unfolding redirect directories and metacopy regular files, so that new upperdir is compatible with legacy overlayfs driver.
 
 For safety reasons, vacuum and merge will not actually modify the filesystem, but generate a shell script to do the changes instead.
@@ -91,7 +91,7 @@ Use -f to force execution.
 
 You'll need to install the Meson build system on your system first, make sure to install a version ≥ 0.54:
 - Using python package
-``` bash 
+``` bash
 python3 -m pip install meson ninja
 ```
 - Or install directly on debian linux
@@ -113,6 +113,12 @@ sudo meson install
 Most of the tools are called via `overlay` binary
 
     # ./overlay diff -l /lower -u /upper
+    # ./overlay merge -l /lower -u /upper
+    # ./overlay merge -l /lower -u /upper -r
+
+By default, `merge` operation uses `mv` to merge files from upperdir to lowerdir.
+- When upperdir and lowerdir belong to the same file system, this is fast.
+- When upperdir and lowerdir belong to different file systems, you can speficy `-r, --use-rsync` option to use `rsync` to merge files. This can be more efficient. When specified, the generated script will use `rsync -a --remove-source-files` instead of `mv`.
 
 See `./overlay --help` for more.
 
@@ -151,7 +157,7 @@ Exit values:
 
 ## Why sudo
 
-As [Linux documentation](https://www.kernel.org/doc/Documentation/filesystems/overlayfs.txt) said, 
+As [Linux documentation](https://www.kernel.org/doc/Documentation/filesystems/overlayfs.txt) said,
 
 > A directory is made opaque by setting the xattr "trusted.overlay.opaque" to "y".
 
@@ -161,9 +167,9 @@ However, only users with `CAP_SYS_ADMIN` can read `trusted.*` extended attribute
 **overlay** binary
 - Only works for regular files and directories. Do not use it on OverlayFS with device files, socket files, etc..
 - Hard links may be broken (i.e. resulting in duplicated independent files).
-- File owner, group and permission bits will be preserved. File timestamps, attributes and extended attributes might be lost. 
+- File owner, group and permission bits will be preserved. File timestamps, attributes and extended attributes might be lost.
 - This program only works for OverlayFS with only one lower layer.
-- It is recommended to have the OverlayFS unmounted before running this program.  
+- It is recommended to have the OverlayFS unmounted before running this program.
 
 **fsck** binary
 - It is strongly recommend to run this program after modifing underlying directories while overlay filesystem is offline.

@@ -11,6 +11,7 @@
 
 extern bool verbose;
 extern bool brief;
+extern bool use_rsync;
 
 /*
  * feature function. will take very long time to complete. returns 0 on success
