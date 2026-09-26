@@ -2,7 +2,7 @@ name: Debian Package Build
 on: [push, pull_request]
 
 jobs:
-  build-matrix:
+  build:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -82,11 +82,14 @@ jobs:
           lintian ../*.deb
           
           echo "=== Simulating Local Package Extraction Tests ==="
-          # Note: We skip full dpkg -i installation runs for cross-compiled foreign structures 
-          # (like arm64 binaries on an x86 host) to avoid execution format architecture errors.
-          if [ -empty "${{ matrix.cross_arch }}" ]; then
-              dpkg -i ../*.deb
+          if [ -z "${{ matrix.cross_arch }}" ]; then
+              # Filter wildcards using grep -v to safely bypass the -dbgsym package files
+              for pkg in $(ls ../*.deb | grep -v "dbgsym"); do
+                  dpkg -i "$pkg"
+              done
           else
               echo "Skipping native installation pass execution for cross-compiled asset: ${{ matrix.arch }}"
-              dpkg --info ../*_${{ matrix.arch }}.deb
+              for pkg in $(ls ../*_${{ matrix.arch }}.deb | grep -v "dbgsym"); do
+                  dpkg --info "$pkg"
+              done
           fi
