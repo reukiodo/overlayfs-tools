@@ -2,10 +2,31 @@ name: Debian Package Build
 on: [push, pull_request]
 
 jobs:
-  build:
+  build-matrix:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            cross_arch: ""
+            toolchain: ""
+            flags: ""
+          - arch: i386
+            cross_arch: "i386"
+            toolchain: "gcc-multilib"
+            flags: "export DEB_CFLAGS_SET='-march=i686 -mtune=generic'"
+          - arch: arm64
+            cross_arch: "arm64"
+            toolchain: "gcc-aarch64-linux-gnu"
+            flags: ""
+
+    container:
+      image: debian:sid
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -16,21 +37,55 @@ jobs:
           echo "NAME=$(git log -1 --pretty=format:'%an')" >> $GITHUB_ENV
           echo "EMAIL=$(git log -1 --pretty=format:'%ae')" >> $GITHUB_ENV
 
-      - name: Print environment variables for debugging
-        run: env | sort
+      - name: Configure Foreign Architecture and Base Toolchains
+        run: |
+          apt-get update
+          apt-get install -y debhelper devscripts git lintian
+          
+          # Conditionally register foreign architecture configurations if present in matrix
+          if [ -n "${{ matrix.cross_arch }}" ]; then
+              dpkg --add-architecture ${{ matrix.cross_arch }}
+              apt-get update
+          fi
+          
+          # Install target cross-compilers or compiler helpers if specified
+          if [ -n "${{ matrix.toolchain }}" ]; then
+              apt-get install -y ${{ matrix.toolchain }}
+          fi
 
-      - name: Build and Test Package
-        uses: docker://debian/buildd:sid
+      - name: Resolve Architecture Dependencies and Build Package
         env:
           DEBFULLNAME: ${{ env.NAME }}
           DEBEMAIL: ${{ env.EMAIL }}
-        with:
-          args: >
-            sh -c "apt-get update &&
-            apt-get install -y debhelper devscripts git lintian &&
-            git config --global --add safe.directory /github/workspace &&
-            mk-build-deps -ir -t 'apt-get -y' &&
-            dpkg-buildpackage -us -uc -b &&
-            echo 'BUILD_COMPLETE' &&
-            lintian ../*.deb &&
-            dpkg -i ../*.deb"
+        run: |
+          # 1. Resolve build-dependencies for the specific target architecture
+          if [ -n "${{ matrix.cross_arch }}" ]; then
+              mk-build-deps -ir -t "apt-get -y --no-install-recommends" -a ${{ matrix.cross_arch }}
+          else
+              mk-build-deps -ir -t "apt-get -y --no-install-recommends"
+          fi
+          
+          # 2. Inject performance overrides (such as down-tuning i386 to i686 execution limits)
+          ${{ matrix.flags }}
+          
+          # 3. Compile the package for the given target matrix architecture
+          if [ -n "${{ matrix.cross_arch }}" ]; then
+              dpkg-buildpackage -a ${{ matrix.cross_arch }} -us -uc -b
+          else
+              dpkg-buildpackage -us -uc -b
+          fi
+
+      - name: Run Downstream Lintian & Installation Sanity Pass
+        run: |
+          echo "=== Executing Package Lint Rules Check ==="
+          lintian ../*.deb
+          
+          echo "=== Simulating Local Package Extraction Tests ==="
+          # Note: We skip full dpkg -i installation runs for cross-compiled foreign structures 
+          # (like arm64 binaries on an x86 host) to avoid execution format architecture errors.
+          if [ -empty "${{ matrix.cross_arch }}" ]; then
+              dpkg -i ../*.deb
+          else
+              echo "Skipping native installation pass execution for cross-compiled asset: ${{ matrix.arch }}"
+              dpkg --info ../*_${{ matrix.arch }}.deb
+          fi
