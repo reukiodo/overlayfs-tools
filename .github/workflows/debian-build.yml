@@ -33,14 +33,15 @@ jobs:
       - name: Extract Git Identity
         id: ident
         run: |
+          apt-get update
+          apt-get install -y git
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           echo "NAME=$(git log -1 --pretty=format:'%an')" >> $GITHUB_ENV
           echo "EMAIL=$(git log -1 --pretty=format:'%ae')" >> $GITHUB_ENV
 
       - name: Configure Foreign Architecture and Base Toolchains
         run: |
-          apt-get update
-          apt-get install -y debhelper devscripts git lintian
+          apt-get install -y debhelper devscripts lintian
           
           # Conditionally register foreign architecture configurations if present in matrix
           if [ -n "${{ matrix.cross_arch }}" ]; then
