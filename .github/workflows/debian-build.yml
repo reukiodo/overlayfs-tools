@@ -81,9 +81,9 @@ jobs:
             # snowflake i386: Treat it as a native multiarch addition to prevent apt uninstall loop traps
             if [ "${{ matrix.cross_arch }}" = "i386" ]; then
               # Added -B to tell mk-build-deps to ONLY generate core binary tracking dependencies
-              mk-build-deps -y -ir -B -t "apt-get -y --no-install-recommends"
+              mk-build-deps -ir -B -t "apt-get -y --no-install-recommends"
             else
-              mk-build-deps -ir -t "apt-get -y --no-install-recommends -o Debug::pkgProblemResolver=yes" --host-arch ${{ matrix.cross_arch }} --build-arch amd64
+              mk-build-deps -ir -B -t "apt-get -y --no-install-recommends -o Debug::pkgProblemResolver=yes" --host-arch ${{ matrix.cross_arch }} --build-arch amd64
             fi
           else
             mk-build-deps -ir -t "apt-get -y --no-install-recommends"
