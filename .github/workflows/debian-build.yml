@@ -26,7 +26,7 @@ jobs:
             flags: ""
           - arch: i386
             cross_arch: "i386"
-            toolchain: "gcc-multilib"
+            toolchain: ""
             flags: "export DEB_CFLAGS_SET='-march=i686 -mtune=generic'"
           - arch: ppc64el
             cross_arch: "ppc64el"
@@ -45,8 +45,7 @@ jobs:
       - name: Extract Git Identity
         id: ident
         run: |
-          apt-get update
-          apt-get install -y git
+          apt --update install -y git
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           echo "NAME=$(git log -1 --pretty=format:'%an')" >> $GITHUB_ENV
           echo "EMAIL=$(git log -1 --pretty=format:'%ae')" >> $GITHUB_ENV
@@ -57,14 +56,18 @@ jobs:
           
           # Conditionally register foreign architecture configurations
           if [ -n "${{ matrix.cross_arch }}" ]; then
+            if [ "${{ matrix.cross_arch }}" = "armel" ]; then
+              apt -y install wget
+              wget http://snapshot.debian.org/archive/debian/20251017T144549Z/pool/main/a/attr/libattr1-dev_2.5.2-3_armel.deb
+              dpkg -i --force-depends libattr1-dev_2.5.2-3_armel.deb
+            fi
             dpkg --add-architecture ${{ matrix.cross_arch }}
-            apt-get update
-            apt-get install -y crossbuild-essential-${{ matrix.cross_arch }} libattr1-dev:${{ matrix.cross_arch }}
+            apt --update install -y crossbuild-essential-${{ matrix.cross_arch }} libattr1-dev:${{ matrix.cross_arch }}
           fi
           
           # Conditionally install target cross-compilers or compiler helpers
           if [ -n "${{ matrix.toolchain }}" ]; then
-            apt-get install -y ${{ matrix.toolchain }}
+            apt -y install ${{ matrix.toolchain }}
           fi
 
       - name: Resolve Architecture Dependencies and Build Package
@@ -77,10 +80,10 @@ jobs:
           
           # Resolve build-dependencies safely across cross-compilation layers
           if [ -n "${{ matrix.cross_arch }}" ]; then
-            mk-build-deps -ir -B -t "apt-get -y --no-install-recommends -o Debug::pkgProblemResolver=yes" --host-arch ${{ matrix.cross_arch }} --build-arch amd64
+            mk-build-deps -ir -B -t "apt -y --no-install-recommends -o Debug::pkgProblemResolver=yes" --host-arch ${{ matrix.cross_arch }} --build-arch amd64
             dpkg-buildpackage -a ${{ matrix.cross_arch }} -us -uc -b
           else
-            mk-build-deps -ir -t "apt-get -y --no-install-recommends"
+            mk-build-deps -ir -t "apt -y --no-install-recommends"
             dpkg-buildpackage -us -uc -b
           fi
 
