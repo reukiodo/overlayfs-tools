@@ -59,6 +59,7 @@ jobs:
           if [ -n "${{ matrix.cross_arch }}" ]; then
             dpkg --add-architecture ${{ matrix.cross_arch }}
             apt-get update
+            apt-get install -y crossbuild-essential-${{ matrix.cross_arch }} libattr1-dev:${{ matrix.cross_arch }}
           fi
           
           # Conditionally install target cross-compilers or compiler helpers
@@ -66,36 +67,20 @@ jobs:
             apt-get install -y ${{ matrix.toolchain }}
           fi
 
-          # Conditionally provision crossbuild-essentials explicitly to prevent apt from purging dummy dependency targets
-          if [ -n "${{ matrix.cross_arch }}" ] && [ "${{ matrix.cross_arch }}" != "i386" ]; then
-            apt-get install -y crossbuild-essential-${{ matrix.cross_arch }}
-          fi
-
       - name: Resolve Architecture Dependencies and Build Package
         env:
           DEBFULLNAME: ${{ env.NAME }}
           DEBEMAIL: ${{ env.EMAIL }}
         run: |
-          # 1. Resolve build-dependencies safely across cross-compilation layers
-          if [ -n "${{ matrix.cross_arch }}" ]; then
-            # snowflake i386: Treat it as a native multiarch addition to prevent apt uninstall loop traps
-            if [ "${{ matrix.cross_arch }}" = "i386" ]; then
-              # Added -B to tell mk-build-deps to ONLY generate core binary tracking dependencies
-              mk-build-deps -ir -B -t "apt-get -y --no-install-recommends"
-            else
-              mk-build-deps -ir -B -t "apt-get -y --no-install-recommends -o Debug::pkgProblemResolver=yes" --host-arch ${{ matrix.cross_arch }} --build-arch amd64
-            fi
-          else
-            mk-build-deps -ir -t "apt-get -y --no-install-recommends"
-          fi
-          
-          # 2. Inject performance overrides (such as down-tuning i386 to i686 execution limits)
+          # Inject performance overrides (such as down-tuning i386 to i686 execution limits)
           ${{ matrix.flags }}
           
-          # 3. Compile the package for the given target matrix architecture
+          # Resolve build-dependencies safely across cross-compilation layers
           if [ -n "${{ matrix.cross_arch }}" ]; then
+            mk-build-deps -ir -B -t "apt-get -y --no-install-recommends -o Debug::pkgProblemResolver=yes" --host-arch ${{ matrix.cross_arch }} --build-arch amd64
             dpkg-buildpackage -a ${{ matrix.cross_arch }} -us -uc -b
           else
+            mk-build-deps -ir -t "apt-get -y --no-install-recommends"
             dpkg-buildpackage -us -uc -b
           fi
 
