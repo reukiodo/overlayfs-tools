@@ -56,13 +56,15 @@ jobs:
           
           # Conditionally register foreign architecture configurations
           if [ -n "${{ matrix.cross_arch }}" ]; then
+            dpkg --add-architecture ${{ matrix.cross_arch }}
+            apt --update install -y crossbuild-essential-${{ matrix.cross_arch }}
             if [ "${{ matrix.cross_arch }}" = "armel" ]; then
               apt -y install wget
               wget http://snapshot.debian.org/archive/debian/20251017T144549Z/pool/main/a/attr/libattr1-dev_2.5.2-3_armel.deb
               dpkg -i --force-depends libattr1-dev_2.5.2-3_armel.deb
+            # else
+            #   apt -y install libattr1-dev:${{ matrix.cross_arch }}
             fi
-            dpkg --add-architecture ${{ matrix.cross_arch }}
-            apt --update install -y crossbuild-essential-${{ matrix.cross_arch }} libattr1-dev:${{ matrix.cross_arch }}
           fi
           
           # Conditionally install target cross-compilers or compiler helpers
