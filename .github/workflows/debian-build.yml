@@ -61,7 +61,9 @@ jobs:
             if [ "${{ matrix.cross_arch }}" = "armel" ]; then
               apt -y install wget
               wget http://snapshot.debian.org/archive/debian/20251017T144549Z/pool/main/a/attr/libattr1-dev_2.5.2-3_armel.deb
-              dpkg -i --force-depends libattr1-dev_2.5.2-3_armel.deb
+              dpkg -x libattr1-dev_2.5.2-3_armel.deb /tmp/
+              cp -r /tmp/usr/include/* /usr/include/
+              cp -r /tmp/usr/lib/arm-linux-gnueabi/* /usr/arm-linux-gnueabi/lib/
             # else
             #   apt -y install libattr1-dev:${{ matrix.cross_arch }}
             fi
