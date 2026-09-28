@@ -11,11 +11,11 @@ jobs:
           - arch: amd64
             toolchain: ""
             flags: ""
-            image: "debian:buster-slim" # Modern rolling Sid
+            image: "debian:buster-slim"
           - arch: armel
             toolchain: "gcc-arm-linux-gnueabi"
             flags: ""
-            image: "debian:buster-slim" # FIX: Pinned historical snapshot container
+            image: "debian:buster-slim"
           - arch: armhf
             toolchain: "gcc-arm-linux-gnueabihf"
             flags: ""
@@ -83,7 +83,8 @@ jobs:
             dpkg --add-architecture ${{ matrix.arch }}
             apt update
             apt -y install crossbuild-essential-${{ matrix.arch }}
-            if [ "${{ matrix.arch }}" = "armel" ] || [ "${{ matrix.arch }}" = "ppc64el" ]; then
+            # manual extraction for crossbuilds
+            if [ "${{ matrix.arch }}" != "amd64" ] && [ "${{ matrix.arch }}" != "i386" ]; then
               (cd /tmp && apt download libattr1-dev:${{ matrix.arch }})
               dpkg-deb -x /tmp/libattr1-dev_*.deb /tmp/
               cp -r /tmp/usr/include/* /usr/include/
