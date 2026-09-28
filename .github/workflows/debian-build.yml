@@ -62,7 +62,7 @@ jobs:
           if [ "${{ matrix.arch }}" != "amd64" ]; then
             dpkg --add-architecture ${{ matrix.arch }}
             apt update
-            apt -y install crossbuild-essential-${{ matrix.arch }}
+            apt -y install crossbuild-essential-${{ matrix.arch }} libc6-dev:${{ matrix.arch }} libattr1-dev:${{ matrix.arch }}
           fi
           
           # Conditionally install target cross-compilers or compiler helpers
