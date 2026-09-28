@@ -85,7 +85,11 @@ jobs:
             apt -y install crossbuild-essential-${{ matrix.arch }}
             # manual extraction for crossbuilds
             if [ "${{ matrix.arch }}" != "amd64" ] && [ "${{ matrix.arch }}" != "i386" ]; then
-              (cd /tmp && apt download libattr1-dev:${{ matrix.arch }})
+              if [ "${{ matrix.arch }}" = "powerpc" ]; then
+                (cd /tmp && wget -q https://snapshot.debian.org/archive/debian/20190310T213528Z/pool/main/a/attr/libattr1-dev_2.4.47-2_powerpc.deb)
+              else
+                (cd /tmp && apt download libattr1-dev:${{ matrix.arch }})
+              fi
               dpkg-deb -x /tmp/libattr1-dev_*.deb /tmp/
               cp -r /tmp/usr/include/* /usr/include/
               cp -r /tmp/usr/lib/*-linux-*/* /usr/*-linux-*/lib/
