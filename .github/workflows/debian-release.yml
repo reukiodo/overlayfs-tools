@@ -70,11 +70,12 @@ jobs:
           if [ "${{ matrix.arch }}" != "amd64" ]; then
             dpkg --add-architecture ${{ matrix.arch }}
             apt --update install -y crossbuild-essential-${{ matrix.arch }}
-            if [ "${{ matrix.arch }}" = "armel" ]; then
+            if [ "${{ matrix.arch }}" = "armel" ] || [ "${{ matrix.arch }}" = "ppc64el" ]; then
               apt download libattr1-dev:${{ matrix.arch }}
               dpkg-deb -x libattr1-dev_*.deb /tmp/
               cp -r /tmp/usr/include/* /usr/include/
-              cp -r /tmp/usr/lib/${{ matrix.toolchain }}/* /usr/${{ matrix.toolchain }}/lib/
+              cp -r /tmp/usr/lib/*-linux-*/* /usr/*-linux-*/lib/
+              sed -i '/libattr1-dev/d' debian/control
             fi
           fi
           if [ -n "${{ matrix.toolchain }}" ]; then
