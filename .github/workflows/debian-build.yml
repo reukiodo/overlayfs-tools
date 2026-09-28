@@ -28,8 +28,28 @@ jobs:
             toolchain: "crossbuild-essential-i386"
             flags: "export DEB_CFLAGS_SET='-march=i686 -mtune=generic'"
             image: "debian:buster-slim"
+          - arch: mips
+            toolchain: "gcc-mips-linux-gnu"
+            flags: ""
+            image: "debian:buster-slim"
+          - arch: mipsel
+            toolchain: "gcc-mipsel-linux-gnu"
+            flags: ""
+            image: "debian:buster-slim"
+          - arch: mips64el
+            toolchain: "gcc-mips64el-linux-gnuabi64"
+            flags: ""
+            image: "debian:buster-slim"
+          - arch: powerpc
+            toolchain: "gcc-powerpc-linux-gnu"
+            flags: ""
+            image: "debian:buster-slim"
           - arch: ppc64el
             toolchain: "gcc-powerpc64le-linux-gnu"
+            flags: ""
+            image: "debian:buster-slim"
+          - arch: s390x
+            toolchain: "gcc-s390x-linux-gnu"
             flags: ""
             image: "debian:buster-slim"
 
