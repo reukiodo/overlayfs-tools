@@ -87,7 +87,7 @@ jobs:
             if [ "${{ matrix.arch }}" != "amd64" ] && [ "${{ matrix.arch }}" != "i386" ]; then
               if [ "${{ matrix.arch }}" = "powerpc" ]; then
                 apt -y install wget
-                (cd /tmp && wget -q https://snapshot.debian.org/archive/debian/20190310T213528Z/pool/main/a/attr/libattr1-dev_2.4.47-2_powerpc.deb)
+                (cd /tmp && wget -q https://snapshot.debian.org/archive/debian/20190310T213528Z/pool/main/a/attr/libattr1-dev_2.4.46-8_powerpc.deb)
               else
                 (cd /tmp && apt download libattr1-dev:${{ matrix.arch }})
               fi
