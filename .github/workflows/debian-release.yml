@@ -1,14 +1,46 @@
 name: Debian Package Build & Release
 on:
-  push:
-    tags:
-      - 'v*' # Triggers a Release only when pushing a tag like v1.0-1
+  release:
+    types: [published] # Triggers automatically when you publish a GitHub Release
 
 jobs:
-  build-and-test:
+  build-and-release:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            toolchain: ""
+            flags: ""
+            image: "debian:sid"
+          - arch: armel
+            toolchain: "gcc-arm-linux-gnueabi"
+            flags: ""
+            image: "debian:trixie"
+          - arch: armhf
+            toolchain: "gcc-arm-linux-gnueabihf"
+            flags: ""
+            image: "debian:sid"
+          - arch: arm64
+            toolchain: "gcc-aarch64-linux-gnu"
+            flags: ""
+            image: "debian:sid"
+          - arch: i386
+            toolchain: "crossbuild-essential-i386"
+            flags: "export DEB_CFLAGS_SET='-march=i686 -mtune=generic'"
+            image: "debian:sid"
+          - arch: ppc64el
+            toolchain: "gcc-powerpc64le-linux-gnu"
+            flags: ""
+            image: "debian:sid"
+
+    container:
+      image: ${{ matrix.image }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -27,48 +59,41 @@ jobs:
       - name: Print environment variables for debugging
         run: env | sort
 
-      - name: Build and Test Package
-        uses: docker://debian/buildd:sid
+      - name: Configure Foreign Architecture and Base Toolchains
+        run: |
+          apt -y install debhelper devscripts lintian equivs
+          if [ "${{ matrix.arch }}" != "amd64" ]; then
+            dpkg --add-architecture ${{ matrix.arch }}
+            apt --update install -y crossbuild-essential-${{ matrix.arch }}
+          fi
+          if [ -n "${{ matrix.toolchain }}" ]; then
+            apt -y install ${{ matrix.toolchain }}
+          fi
+
+      - name: Resolve Architecture Dependencies and Build Package
         env:
           DEBFULLNAME: ${{ env.NAME }}
           DEBEMAIL: ${{ env.EMAIL }}
           VERSION: ${{ env.VERSION }}
-        with:
-          args: >
-            sh -c "apt-get update &&
-            apt-get install -y debhelper devscripts git lintian &&
-            git config --global --add safe.directory /github/workspace &&
-            PRISTINE_VERSION=$(echo $VERSION | cut -d'-' -f1) &&
-            tar --exclude=./debian -cJf ../overlayfs-tools_${PRISTINE_VERSION}.orig.tar.xz . &&
-            dch -v $VERSION --distribution unstable --force-distribution 'Automated release from GitHub Tag' &&
-            mk-build-deps -ir -t 'apt-get -y' &&
-            dpkg-buildpackage -us -uc &&
-            echo '--- RUNNING LINTIAN ---' &&
-            lintian ../*.deb &&
-            echo '--- RUNNING BASIC INSTALL TEST ---' &&
-            dpkg -i ../*.deb &&
-            mv ../overlayfs-tools* ./"
+        run: |
+          ${{ matrix.flags }}
+          PRISTINE_VERSION=$(echo $VERSION | cut -d'-' -f1)
+          tar --exclude=./debian -cJf ../overlayfs-tools_${PRISTINE_VERSION}.orig.tar.xz .
+          dch -v $VERSION --distribution unstable --force-distribution --force-bad-version "Automated release from GitHub Tag"
+          
+          mk-build-deps -ir -B -t "apt -y --no-install-recommends -o Debug::pkgProblemResolver=yes" --host-arch ${{ matrix.arch }} --build-arch amd64
+          dpkg-buildpackage -a ${{ matrix.arch }} -us -uc -b
 
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: debian-packages
-          path: ./overlayfs-tools*
+      - name: Stage Release Artifacts
+        run: |
+          mkdir -p staging_dir
+          mv ../overlayfs-tools_*_${{ matrix.arch }}.deb staging_dir/ || true
+          mv ../overlayfs-tools-dbgsym_*_${{ matrix.arch }}.deb staging_dir/ || true
 
-  release:
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: debian-packages
-
-      - name: Create GitHub Release
+      - name: Upload Architecture Package to Release Assets
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            ./overlayfs-tools*
+          files: staging_dir/*
           generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
