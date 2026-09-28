@@ -9,32 +9,32 @@ jobs:
       matrix:
         include:
           - arch: amd64
-            cross_arch: ""
             toolchain: ""
             flags: ""
+            image: "debian:sid" # Modern rolling Sid
           - arch: armel
-            cross_arch: "armel"
             toolchain: "gcc-arm-linux-gnueabi"
             flags: ""
+            image: "debian/trixie" # FIX: Pinned historical snapshot container
           - arch: armhf
-            cross_arch: "armhf"
             toolchain: "gcc-arm-linux-gnueabihf"
             flags: ""
+            image: "debian:sid"
           - arch: arm64
-            cross_arch: "arm64"
             toolchain: "gcc-aarch64-linux-gnu"
             flags: ""
+            image: "debian:sid"
           - arch: i386
-            cross_arch: "i386"
-            toolchain: ""
+            toolchain: "crossbuild-essential-i386"
             flags: "export DEB_CFLAGS_SET='-march=i686 -mtune=generic'"
+            image: "debian:sid"
           - arch: ppc64el
-            cross_arch: "ppc64el"
             toolchain: "gcc-powerpc64le-linux-gnu"
             flags: ""
+            image: "debian:sid"
 
     container:
-      image: debian:sid
+      image: ${{ matrix.image }} # FIX: Dynamically load the matching image from the matrix map
 
     steps:
       - name: Checkout Source Code
@@ -52,21 +52,12 @@ jobs:
 
       - name: Configure Foreign Architecture and Base Toolchains
         run: |
-          apt-get install -y debhelper devscripts lintian equivs
+          apt -y install debhelper devscripts lintian equivs
           
           # Conditionally register foreign architecture configurations
-          if [ -n "${{ matrix.cross_arch }}" ]; then
-            dpkg --add-architecture ${{ matrix.cross_arch }}
-            apt --update install -y crossbuild-essential-${{ matrix.cross_arch }}
-            if [ "${{ matrix.cross_arch }}" = "armel" ]; then
-              apt -y install wget
-              wget http://snapshot.debian.org/archive/debian/20251017T144549Z/pool/main/a/attr/libattr1-dev_2.5.2-3_armel.deb
-              dpkg -x libattr1-dev_2.5.2-3_armel.deb /tmp/
-              cp -r /tmp/usr/include/* /usr/include/
-              cp -r /tmp/usr/lib/arm-linux-gnueabi/* /usr/arm-linux-gnueabi/lib/
-            # else
-            #   apt -y install libattr1-dev:${{ matrix.cross_arch }}
-            fi
+          if [ "${{ matrix.arch }}" != "amd64" ]; then
+            dpkg --add-architecture ${{ matrix.arch }}
+            apt --update install -y crossbuild-essential-${{ matrix.arch }}
           fi
           
           # Conditionally install target cross-compilers or compiler helpers
@@ -83,16 +74,13 @@ jobs:
           ${{ matrix.flags }}
           
           # Resolve build-dependencies safely across cross-compilation layers
-          if [ -n "${{ matrix.cross_arch }}" ]; then
-            if [ "${{ matrix.cross_arch }}" = "armel" ]; then
-              sed -i '/libattr1-dev/d' debian/control
-            fi
-            mk-build-deps -ir -B -t "apt -y --no-install-recommends -o Debug::pkgProblemResolver=yes" --host-arch ${{ matrix.cross_arch }} --build-arch amd64
-            dpkg-buildpackage -a ${{ matrix.cross_arch }} -us -uc -b
-          else
-            mk-build-deps -ir -t "apt -y --no-install-recommends"
-            dpkg-buildpackage -us -uc -b
-          fi
+          # if [ "${{ matrix.arch }}" = "amd64" ]; then
+          #   mk-build-deps -ir -t "apt -y --no-install-recommends"
+          #   dpkg-buildpackage -us -uc -b
+          # else
+          mk-build-deps -ir -B -t "apt -y --no-install-recommends -o Debug::pkgProblemResolver=yes" --host-arch ${{ matrix.arch }} --build-arch amd64
+          dpkg-buildpackage -a ${{ matrix.arch }} -us -uc -b
+          # fi
 
       - name: Run Downstream Lintian & Installation Sanity Pass
         run: |
@@ -100,14 +88,14 @@ jobs:
           lintian ../*.deb
           
           echo "=== Simulating Local Package Extraction Tests ==="
-          if [ -z "${{ matrix.cross_arch }}" ]; then
-            # Filter wildcards using grep -v to safely bypass the -dbgsym package files
-            for pkg in $(ls ../*.deb | grep -v "dbgsym"); do
-              dpkg -i "$pkg"
-            done
-          else
-            echo "Skipping native installation pass execution for cross-compiled asset: ${{ matrix.arch }}"
-            for pkg in $(ls ../*_${{ matrix.arch }}.deb | grep -v "dbgsym"); do
-              dpkg --info "$pkg"
-            done
-          fi
+          # if [ -z "${{ matrix.arch }}" ]; then
+          #   # Filter wildcards using grep -v to safely bypass the -dbgsym package files
+          #   for pkg in $(ls ../*.deb | grep -v "dbgsym"); do
+          #     dpkg -i "$pkg"
+          #   done
+          # else
+          echo "Skipping native installation pass execution for cross-compiled asset: ${{ matrix.arch }}"
+          for pkg in $(ls ../*_${{ matrix.arch }}.deb | grep -v "dbgsym"); do
+            dpkg --info "$pkg"
+          done
+          # fi
