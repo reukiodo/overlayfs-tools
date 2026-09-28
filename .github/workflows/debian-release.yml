@@ -47,6 +47,7 @@ jobs:
       - name: Extract Git Identity
         id: ident
         run: |
+          apt --update install -y git
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           echo "NAME=$(git log -1 --pretty=format:'%an')" >> $GITHUB_ENV
           echo "EMAIL=$(git log -1 --pretty=format:'%ae')" >> $GITHUB_ENV
