@@ -45,7 +45,11 @@ jobs:
       - name: Extract Git Identity
         id: ident
         run: |
-          apt --update install -y git
+          echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99no-check-valid-until
+          echo 'Acquire::Check-Date "false";' >> /etc/apt/apt.conf.d/99no-check-valid-until
+          sed -i 's|/deb\.|/archive\.|g' /etc/apt/sources.list
+          apt update
+          apt -y install git
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           echo "NAME=$(git log -1 --pretty=format:'%an')" >> $GITHUB_ENV
           echo "EMAIL=$(git log -1 --pretty=format:'%ae')" >> $GITHUB_ENV
@@ -57,7 +61,8 @@ jobs:
           # Conditionally register foreign architecture configurations
           if [ "${{ matrix.arch }}" != "amd64" ]; then
             dpkg --add-architecture ${{ matrix.arch }}
-            apt --update install -y crossbuild-essential-${{ matrix.arch }}
+            apt update
+            apt -y install crossbuild-essential-${{ matrix.arch }}
           fi
           
           # Conditionally install target cross-compilers or compiler helpers
