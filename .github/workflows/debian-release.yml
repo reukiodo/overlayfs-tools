@@ -67,9 +67,12 @@ jobs:
       - name: Configure Foreign Architecture and Base Toolchains
         run: |
           apt -y install debhelper devscripts lintian equivs
+          
+          # Conditionally register foreign architecture configurations
           if [ "${{ matrix.arch }}" != "amd64" ]; then
             dpkg --add-architecture ${{ matrix.arch }}
-            apt --update install -y crossbuild-essential-${{ matrix.arch }}
+            apt update
+            apt -y install crossbuild-essential-${{ matrix.arch }}
             if [ "${{ matrix.arch }}" = "armel" ] || [ "${{ matrix.arch }}" = "ppc64el" ]; then
               (cd /tmp && apt download libattr1-dev:${{ matrix.arch }})
               dpkg-deb -x /tmp/libattr1-dev_*.deb /tmp/
@@ -78,6 +81,8 @@ jobs:
               sed -i '/libattr1-dev/d' debian/control
             fi
           fi
+          
+          # Conditionally install target cross-compilers or compiler helpers
           if [ -n "${{ matrix.toolchain }}" ]; then
             apt -y install ${{ matrix.toolchain }}
           fi
