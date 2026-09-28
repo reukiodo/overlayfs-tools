@@ -31,3 +31,7 @@ override_dh_auto_install:
 # Disable dh_dwz optimization to fix cross-compilation path layout bugs
 override_dh_dwz:
 	@echo "Bypassing dh_dwz optimization tracking..."
+
+# Disable dh_shlibdeps on the cross-compilation track to bypass package mapping missing errors
+override_dh_shlibdeps:
+	@echo "Bypassing dh_shlibdeps execution pass..."

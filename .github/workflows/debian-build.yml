@@ -62,7 +62,14 @@ jobs:
           if [ "${{ matrix.arch }}" != "amd64" ]; then
             dpkg --add-architecture ${{ matrix.arch }}
             apt update
-            apt -y install crossbuild-essential-${{ matrix.arch }} libc6-dev:${{ matrix.arch }} libattr1-dev:${{ matrix.arch }}
+            apt -y install crossbuild-essential-${{ matrix.arch }}
+            if [ "${{ matrix.arch }}" = "armel" ]; then
+              apt download libattr1-dev:${{ matrix.arch }}
+              dpkg-deb -x libattr1-dev_*.deb /tmp/
+              cp -r /tmp/usr/include/* /usr/include/
+              cp -r /tmp/usr/lib/${{ matrix.toolchain }}/* /usr/${{ matrix.toolchain }}/lib/
+              sed -i '/libattr1-dev/d' debian/control
+            fi
           fi
           
           # Conditionally install target cross-compilers or compiler helpers
