@@ -27,3 +27,7 @@ override_dh_auto_test:
 override_dh_auto_install:
 	dh_auto_install --destdir=debian/overlayfs-tools
 	dh_installman
+
+# Disable dh_dwz optimization to fix cross-compilation path layout bugs
+override_dh_dwz:
+	@echo "Bypassing dh_dwz optimization tracking..."
