@@ -15,7 +15,7 @@ jobs:
           - arch: armel
             toolchain: "gcc-arm-linux-gnueabi"
             flags: ""
-            image: "debian/trixie" # FIX: Pinned historical snapshot container
+            image: "debian:trixie" # FIX: Pinned historical snapshot container
           - arch: armhf
             toolchain: "gcc-arm-linux-gnueabihf"
             flags: ""
@@ -74,13 +74,8 @@ jobs:
           ${{ matrix.flags }}
           
           # Resolve build-dependencies safely across cross-compilation layers
-          # if [ "${{ matrix.arch }}" = "amd64" ]; then
-          #   mk-build-deps -ir -t "apt -y --no-install-recommends"
-          #   dpkg-buildpackage -us -uc -b
-          # else
           mk-build-deps -ir -B -t "apt -y --no-install-recommends -o Debug::pkgProblemResolver=yes" --host-arch ${{ matrix.arch }} --build-arch amd64
           dpkg-buildpackage -a ${{ matrix.arch }} -us -uc -b
-          # fi
 
       - name: Run Downstream Lintian & Installation Sanity Pass
         run: |
@@ -88,14 +83,7 @@ jobs:
           lintian ../*.deb
           
           echo "=== Simulating Local Package Extraction Tests ==="
-          # if [ -z "${{ matrix.arch }}" ]; then
-          #   # Filter wildcards using grep -v to safely bypass the -dbgsym package files
-          #   for pkg in $(ls ../*.deb | grep -v "dbgsym"); do
-          #     dpkg -i "$pkg"
-          #   done
-          # else
           echo "Skipping native installation pass execution for cross-compiled asset: ${{ matrix.arch }}"
           for pkg in $(ls ../*_${{ matrix.arch }}.deb | grep -v "dbgsym"); do
             dpkg --info "$pkg"
           done
-          # fi
