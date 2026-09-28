@@ -30,8 +30,28 @@ jobs:
             toolchain: "crossbuild-essential-i386"
             flags: "export DEB_CFLAGS_SET='-march=i686 -mtune=generic'"
             image: "debian:buster-slim"
+          - arch: mips
+            toolchain: "gcc-mips-linux-gnu"
+            flags: ""
+            image: "debian:buster-slim"
+          - arch: mipsel
+            toolchain: "gcc-mipsel-linux-gnu"
+            flags: ""
+            image: "debian:buster-slim"
+          - arch: mips64el
+            toolchain: "gcc-mips64el-linux-gnuabi64"
+            flags: ""
+            image: "debian:buster-slim"
+          - arch: powerpc
+            toolchain: "gcc-powerpc-linux-gnu"
+            flags: ""
+            image: "debian:buster-slim"
           - arch: ppc64el
             toolchain: "gcc-powerpc64le-linux-gnu"
+            flags: ""
+            image: "debian:buster-slim"
+          - arch: s390x
+            toolchain: "gcc-s390x-linux-gnu"
             flags: ""
             image: "debian:buster-slim"
 
@@ -73,8 +93,14 @@ jobs:
             dpkg --add-architecture ${{ matrix.arch }}
             apt update
             apt -y install crossbuild-essential-${{ matrix.arch }}
-            if [ "${{ matrix.arch }}" = "armel" ] || [ "${{ matrix.arch }}" = "ppc64el" ]; then
-              (cd /tmp && apt download libattr1-dev:${{ matrix.arch }})
+            # manual extraction for crossbuilds
+            if [ "${{ matrix.arch }}" != "amd64" ] && [ "${{ matrix.arch }}" != "i386" ]; then
+              if [ "${{ matrix.arch }}" = "powerpc" ]; then
+                apt -y install wget
+                (cd /tmp && wget -q https://snapshot.debian.org/archive/debian/20190310T213528Z/pool/main/a/attr/libattr1-dev_2.4.46-8_powerpc.deb)
+              else
+                (cd /tmp && apt download libattr1-dev:${{ matrix.arch }})
+              fi
               dpkg-deb -x /tmp/libattr1-dev_*.deb /tmp/
               cp -r /tmp/usr/include/* /usr/include/
               cp -r /tmp/usr/lib/*-linux-*/* /usr/*-linux-*/lib/
