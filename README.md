@@ -180,3 +180,63 @@ However, only users with `CAP_SYS_ADMIN` can read `trusted.*` extended attribute
 
 Contributions to overlayfs-progs are very welcome.
 Please send Pull Reqeusts to this project. For `fsck.overlay` utility you might want to CC linux-unionfs mailing list at linux-unionfs@vger.kernel.org.
+
+
+# Architectural Design & Compatibility Matrix
+
+This project is meticulously cross-compiled to achieve the maximum possible backward-compatibility footprint across alternative hardware platforms—spanning from headless edge micro-nodes to legacy enterprise mainframes. 
+
+---
+
+## 🐧 The Hard Core Constraint: The Kernel Floor
+
+The foundational boundary of this deployment framework is governed by the underlying Linux kernel architecture:
+
+* **Mainline Integration Threshold:** The `overlay` filesystem kernel driver driver subsystem was officially integrated into the mainline Linux kernel tree in **Linux v3.18**.
+* **The Stock Baseline:** Out-of-the-box, any Linux distribution running an un-upgraded kernel older than v3.18 is physically missing the required virtual file allocation layers.
+* **The Backports Loophole:** Older legacy operating systems (such as **Debian 7 "Wheezy"** or **Debian 8 "Jessie"**) are fully capable of executing this software *provided* they have been upgraded to official long-term-supported or backported kernel iterations (such as **Linux v3.18**).
+
+---
+
+## 🏛️ Release Compiling Framework & Strategy
+
+To balance broad target deployability with automated cloud pipeline stability, our production releases target **Debian 10 (Buster)** or **Debian 11 (Bullseye)** execution baselines rather than modern rolling Sid development snapshots.
+
+### 🔍 Why Target Legacy Release Environments?
+When a native C binary is compiled, it permanently links its runtime hooks against the core system C library (**`glibc`**). 
+
+* `glibc` execution boundaries are strictly **backwards-compatible** but **never forwards-compatible**. 
+* Compiling inside a modern 2026 container environment creates a binary that explicitly requires `glibc >= 2.40`. This binary will instantly crash with an execution format error if deployed on an older target server.
+* Compiling inside a Buster or Bullseye container targets a frozen historical core footprint (**`glibc 2.28`** or **`glibc 2.31`**). The resulting binary can seamlessly slide forward and execute cleanly on modern operating systems while maintaining native stability on older hardware pools.
+
+---
+
+## ⚙️ Target Hardware Architecture Reference
+
+The binary release pool provisions **11 discrete hardware profiles** in parallel. Use the matrix below to identify your platform's operational baseline:
+
+| Debian Architecture | CPU Target Profile | Minimum Release Base | Core Limitation / Architectural Note |
+| :--- | :--- | :--- | :--- |
+| **`amd64`** | Modern PC / Cloud Servers | Debian 10 (Buster) | Primary 64-bit x86 execution tier (`glibc 2.28` floor). |
+| **`i386`** | Legacy x86 / 32-bit Nodes | Debian 10 (Buster) | Force-down-tuned via `-march=i686` to support old platforms. |
+| **`arm64`** | Raspberry Pi 3 / 4 / 5 | Debian 10 (Buster) | Native 64-bit ARM configuration layer for modern single-board targets. |
+| **`armhf`** | Raspberry Pi 2 / 3 (32-bit) | Debian 10 (Buster) | Leverages the **Hardware FPU** (Hard Float) to prevent math overhead loops. |
+| **`armel`** | **Raspberry Pi Zero / Pi 1** | Debian 12 (Bookworm) | **Software Float Fallback.** Required for ARMv6 targets lacking FPU hardware. Built via Bookworm-slim to avoid deprecated mirror blocks. |
+| **`ppc64el`** | OpenPOWER Servers | Debian 11 (Bullseye) | 64-bit PowerPC Little Endian toolchain targets. |
+| **`powerpc`** | Classic Apple / Amiga | Debian 10 (Buster) | Vintage 32-bit Big Endian PowerPC profile. Managed via historical Debian Ports archive extraction paths. |
+| **`mips`** | Big Endian Networking | Debian 10 (Buster) | Traditional 32-bit Big Endian MIPS micro-controller targets. |
+| **`mipsel`** | Little Endian Hardware | Debian 10 (Buster) | Traditional 32-bit Little Endian MIPS target lines. |
+| **`mips64el`** | High-End MIPS Nodes | Debian 10 (Buster) | 64-bit Little Endian MIPS hardware profiles. |
+| **`s390x`** | IBM System/390 Mainframes | Debian 10 (Buster) | Large-scale mainframe architecture data layers. |
+
+---
+
+## 📦 Cross-Compilation Design Choices
+
+To keep the pipeline immune to repository deprecation walls and automated rate-limiting flags, the builder handles dependencies using a **Split-Mirror Multiarch Paradigm**:
+
+1. **Native x86 Compiling:** Standard toolchains build `amd64` and `i386` targets using native system packages.
+2. **Standard Cross-Compiles:** `arm64`, `armhf`, `mips64el`, etc., cleanly pull structural library frameworks from live long-term repository vaults.
+3. **Ghost Package Bypasses:** Esoteric or retired configurations (like `armel` and `powerpc`) bypass standard `apt` dependency resolution constraints. The deployment script downloads target packages directly, manually extracts the required header structures into `/usr/include/`, and drops the runtime files precisely into the cross-compiler's triplet path arrays. 
+
+This custom design pattern isolates the continuous integration host environment from version pollution, guarantees binary compilation integrity, and produces standalone packages ready to run out of the box.
