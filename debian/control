@@ -13,8 +13,7 @@ Homepage: https://github.com
 Package: overlayfs-tools
 Architecture: any
 Depends: ${shlibs:Depends},
-         ${misc:Depends},
-         linux-image (>=3.18)
+         ${misc:Depends}
 Description: tools to manage OverlayFS filesystems
  Provides utilities to maintain OverlayFS, including an offline 
  merge tool necessary for syncing writable RAM layers back 
